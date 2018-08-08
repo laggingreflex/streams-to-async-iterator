@@ -9,6 +9,7 @@ main()
 async function main() {
   await basic();
   // await breaks();
+  // await stdin();
 }
 
 
@@ -25,4 +26,13 @@ async function basic() {
 
   const source = fs.readFileSync(filename, 'utf8');
   assert.equal(source, target);
+}
+
+async function stdin() {
+
+  for await (const { data } of new lib(process.stdin)) {
+    process.stdout.write(data)
+    // console.log(`data:`, data);
+  }
+
 }
