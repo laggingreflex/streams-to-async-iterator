@@ -1,4 +1,4 @@
-const $ = 'resolve,reject'.split(',').reduce(($, _) => ({ ...$, [_]: Symbol(_) }), {});
+const $ = new Proxy({}, { get: ($, _) => typeof _ === 'string' && !$[_] ? ($[_] = Symbol(_)) : $[_] });
 
 module.exports = class streamsToAsyncGenerator {
 

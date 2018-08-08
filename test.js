@@ -32,7 +32,6 @@ async function stdin() {
 
   for await (const { data } of new lib(process.stdin)) {
     process.stdout.write(data)
-    // console.log(`data:`, data);
   }
 
 }
