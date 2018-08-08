@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "description": "",
   "main": "index.js",
+  "repository": "laggingreflex/streams-to-async-iterator",
   "scripts": {
-    "start": "node ."
-  },
-  "repository": "laggingreflex/streams-to-async-iterator"
+    "test": "node test"
+  }
 }
