@@ -4,12 +4,15 @@ const assert = require('assert');
 
 main()
   .then(() => console.log('ok'))
-  .catch(error => process.exit(console.error(error), 1));
+  .catch(error => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 
 async function main() {
-  await basic();
+  // await basic();
   // await breaks();
-  // await stdin();
+  await stdin();
 }
 
 
@@ -17,7 +20,8 @@ async function basic() {
   const filename = __filename;
 
   let target = '';
-  for await (const { data } of new lib(fs.createReadStream(filename))) {
+  for await (const data of lib(fs.createReadStream(filename, {encoding: 'utf8'}))) {
+    // console.log(data.length);
     if (data) {
       // console.log(`data:`, data);
       target += data;
@@ -30,7 +34,8 @@ async function basic() {
 
 async function stdin() {
 
-  for await (const { data } of new lib(process.stdin)) {
+  for await (const data of lib(process.stdin)) {
+    // console.log('1');
     process.stdout.write(data)
   }
 

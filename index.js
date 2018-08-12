@@ -1,58 +1,51 @@
-const $ = new Proxy({}, { get: ($, _) => typeof _ === 'string' && !$[_] ? ($[_] = Symbol(_)) : $[_] });
+module.exports = async function*(stream, opts) {
 
-module.exports = class streamsToAsyncGenerator {
+  const queue = [];
+  const defer = new Defer();
+  let ended = false;
 
-  constructor(...streams) {
-    this.next();
+  const onData = data => {
+    queue.push(data);
+    defer.resolve();
+  };
+  const onError = e => defer.reject(e);
+  const onEnd = () => {
+    defer.resolve();
+    ended = true;
+  };
 
-    const removeListeners = streams.map((stream, i) => addListeners(stream, {
-      data: data => {
-        data = String(data)
-        this[$.resolve]({ stream, i, data });
-      },
-      close: code => {
-        this[$.resolve]({ stream, i, code, done: true });
-        this.done = true;
-      },
-      error: error => {
-        error.stream = stream;
-        this[$.reject](error);
-      },
-    }));
+  stream.on('data', onData);
+  stream.on('error', onError);
+  stream.on('end', onEnd);
+  stream.on('close', onEnd);
 
-    this.return = () => {
-      removeListeners.forEach(_ => _())
-      this.done = true;
-      return this;
-    };
-  }
-
-  next() {
-    if (this[$.error]) {
-      throw this[$.error];
-    } else if (this.done) {
-      return this.return();
+  try {
+    while (true) {
+      await defer;
+      if (ended) break;
+      defer.reset();
+      while (queue.length) {
+        yield queue.shift();
+      }
     }
-    this.value = new Promise((resolve, reject) => {
-      this[$.resolve] = resolve;
-      this[$.reject] = error => {
-        this[$.error] = error;
-        reject(error);
-      };
-    });
-    return this;
+  } finally {
+    stream.off('data', onData);
+    stream.off('error', onError);
+    stream.off('end', onEnd);
+    stream.off('close', onEnd);
   }
-
-  [Symbol.iterator]() { return this; }
-
 }
 
-function addListeners(stream, listeners) {
-  const removeListeners = [];
-  for (const event in listeners) {
-    const listener = listeners[event];
-    stream.on(event, listener);
-    removeListeners.push(() => stream.off(event, listener));
+class Defer {
+  constructor() {
+    this.reset();
   }
-  return () => removeListeners.forEach(r => r());
+  reset() {
+    this.promise = new Promise((resolve, reject) => {
+      this.resolve = resolve;
+      this.reject = reject;
+    })
+  }
+  get then() { return this.promise.then.bind(this.promise) }
+  get catch() { return this.promise.catch.bind(this.promise) }
 }
