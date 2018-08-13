@@ -21,6 +21,17 @@ for await (const chunk of asyncStream) {
 }
 ```
 
+### API
+
+**`toAsync(stream, opts)`**
+
+* **`stream`** Readable stream
+
+* **`opts`**
+
+  * **`interrupt`** Promise that when rejected interrupts (and closes) the stream
+
+
 ## Alternatives:
 
 * **[stream-to-async-iterator]**

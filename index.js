@@ -1,4 +1,4 @@
-module.exports = async function*(stream, opts) {
+module.exports = async function*(stream, opts = {}) {
 
   const queue = [];
   const defer = new Defer();
@@ -21,7 +21,7 @@ module.exports = async function*(stream, opts) {
 
   try {
     while (true) {
-      await defer;
+      await Promise.race([defer, opts.interrupt].filter(Boolean));
       if (ended) break;
       defer.reset();
       while (queue.length) {
