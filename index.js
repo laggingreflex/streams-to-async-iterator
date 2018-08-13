@@ -1,3 +1,5 @@
+const { Defer } = require('./utils')
+
 module.exports = async function*(stream, opts = {}) {
 
   const queue = [];
@@ -15,9 +17,9 @@ module.exports = async function*(stream, opts = {}) {
   };
 
   stream.on('data', onData);
-  stream.on('error', onError);
-  stream.on('end', onEnd);
-  stream.on('close', onEnd);
+  stream.once('error', onError);
+  stream.once('end', onEnd);
+  stream.once('close', onEnd);
 
   try {
     while (true) {
@@ -33,19 +35,6 @@ module.exports = async function*(stream, opts = {}) {
     stream.off('error', onError);
     stream.off('end', onEnd);
     stream.off('close', onEnd);
+    defer.resolve();
   }
-}
-
-class Defer {
-  constructor() {
-    this.reset();
-  }
-  reset() {
-    this.promise = new Promise((resolve, reject) => {
-      this.resolve = resolve;
-      this.reject = reject;
-    })
-  }
-  get then() { return this.promise.then.bind(this.promise) }
-  get catch() { return this.promise.catch.bind(this.promise) }
 }
