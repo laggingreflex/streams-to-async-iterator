@@ -1,6 +1,6 @@
 {
   "name": "streams-to-async-iterator",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A simple stream to async iterator",
   "main": "index.js",
   "repository": "laggingreflex/streams-to-async-iterator",
