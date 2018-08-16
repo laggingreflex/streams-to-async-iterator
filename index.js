@@ -2,6 +2,8 @@ const { Defer } = require('./utils')
 
 module.exports = (stream, opts = {}) => {
 
+  const wasPausedInitially = stream.isPaused();
+
   const queue = [];
   const defer = new Defer();
   let done = false;
@@ -29,6 +31,9 @@ module.exports = (stream, opts = {}) => {
     stream.off('error', onError);
     stream.off('end', onEnd);
     stream.off('close', onEnd);
+    if (wasPausedInitially) {
+      stream.pause();
+    }
   };
 
   const iterator = {};
@@ -37,11 +42,13 @@ module.exports = (stream, opts = {}) => {
     if (done) {
       return { done };
     }
+    stream.resume();
     try {
       await defer;
     } catch (error) {
       iterator.throw(error);
     }
+    stream.pause();
     if (queue.length) {
       const value = queue.shift();
       if (!queue.length) {
