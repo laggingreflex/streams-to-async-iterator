@@ -1,19 +1,22 @@
 const { Defer } = require('./utils')
 
-module.exports = async function*(stream, opts = {}) {
+module.exports = (stream, opts = {}) => {
 
   const queue = [];
   const defer = new Defer();
-  let ended = false;
+  let done = false;
 
   const onData = data => {
     queue.push(data);
     defer.resolve();
   };
-  const onError = e => defer.reject(e);
+  const onError = e => {
+    done = true;
+    defer.reject(e)
+  };
   const onEnd = () => {
+    done = true;
     defer.resolve();
-    ended = true;
   };
 
   stream.on('data', onData);
@@ -21,20 +24,50 @@ module.exports = async function*(stream, opts = {}) {
   stream.once('end', onEnd);
   stream.once('close', onEnd);
 
-  try {
-    while (true) {
-      await Promise.race([defer, opts.interrupt].filter(Boolean));
-      if (ended) break;
-      defer.reset();
-      while (queue.length) {
-        yield queue.shift();
-      }
-    }
-  } finally {
+  const off = () => {
     stream.off('data', onData);
     stream.off('error', onError);
     stream.off('end', onEnd);
     stream.off('close', onEnd);
-    defer.resolve();
-  }
+  };
+
+  const iterator = {};
+
+  iterator.next = async () => {
+    if (done) {
+      return { done };
+    }
+    try {
+      await defer;
+    } catch (error) {
+      iterator.throw(error);
+    }
+    if (queue.length) {
+      const value = queue.shift();
+      if (!queue.length) {
+        defer.reset();
+      }
+      return { value, done };
+    } else {
+      return iterator.return();
+    }
+  };
+
+  iterator.throw = (error) => {
+    off();
+    defer.reject(error);
+    done = true;
+    return { done }
+  };
+
+  iterator.return = (value) => {
+    defer.resolve(value);
+    off();
+    done = true;
+    return { value, done }
+  };
+
+  iterator[Symbol.asyncIterator] = () => iterator;
+
+  return iterator;
 }
