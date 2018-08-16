@@ -1,6 +1,6 @@
 const { Defer } = require('./utils')
 
-module.exports = (stream, opts = {}) => {
+module.exports = (stream) => {
 
   const wasPausedInitially = stream.isPaused();
 
