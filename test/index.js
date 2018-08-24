@@ -1,5 +1,6 @@
-const lib = require('.');
+const lib = require('..');
 const fs = require('fs');
+const { fork } = require('child_process')
 const assert = require('assert');
 
 main()
@@ -10,9 +11,10 @@ main()
   });
 
 async function main() {
-  // await basic();
+  await basic();
   // await breaks();
-  await stdin();
+  // await stdin();
+  // await stdout();
 }
 
 
@@ -20,7 +22,7 @@ async function basic() {
   const filename = __filename;
 
   let target = '';
-  for await (const data of lib(fs.createReadStream(filename, {encoding: 'utf8'}))) {
+  for await (const data of lib(fs.createReadStream(filename, { encoding: 'utf8' }))) {
     // console.log(data.length);
     if (data) {
       // console.log(`data:`, data);
@@ -37,6 +39,23 @@ async function stdin() {
   for await (const data of lib(process.stdin)) {
     // console.log('1');
     process.stdout.write(data)
+  }
+
+}
+
+async function stdout() {
+  const cp = fork('test/stdout.js', { encoding: 'utf8', stdio: 'pipe' });
+  let i = 0
+  for await (let data of lib(cp.stdout.setEncoding('utf8'))) {
+    data = parseInt(data)
+    if (data !== i) {
+      console.log({ i, data });
+      throw new Error('!!')
+    } else {
+      console.log(data);
+    }
+    await new Promise(_ => setTimeout(_, 110))
+    i++;
   }
 
 }
